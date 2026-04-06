@@ -1,0 +1,4 @@
+,dtype,missing_count,missing_%,unique_values
+a,float64,0,0.0,100
+b,float64,0,0.0,100
+c,str,0,0.0,2

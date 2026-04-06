@@ -1,0 +1,90 @@
+============================================================
+DATA PROFILE REPORT
+============================================================
+
+1. SHAPE
+----------------------------------------
+Rows: 2000, Columns: 12
+
+2. DATA TYPES
+----------------------------------------
+  student_id                str
+  department                str
+  semester                  str
+  course_load               int64
+  study_hours_weekly        float64
+  gpa                       float64
+  attendance_pct            float64
+  has_internship            str
+  commute_minutes           float64
+  scholarship               str
+  commute_missing           int64
+  scholarship_missing       int64
+
+3. MISSING VALUES — BEFORE HANDLING
+----------------------------------------
+  Column                       Count   Percent
+  student_id                       0      0.0%
+  department                       0      0.0%
+  semester                         0      0.0%
+  course_load                      0      0.0%
+  study_hours_weekly               0      0.0%
+  gpa                              0      0.0%
+  attendance_pct                   0      0.0%
+  has_internship                   0      0.0%
+  commute_minutes                181     9.05%
+  scholarship                    389    19.45%
+
+4. MISSING VALUES — AFTER HANDLING
+----------------------------------------
+  Column                       Count   Percent
+  student_id                       0      0.0%
+  department                       0      0.0%
+  semester                         0      0.0%
+  course_load                      0      0.0%
+  study_hours_weekly               0      0.0%
+  gpa                              0      0.0%
+  attendance_pct                   0      0.0%
+  has_internship                   0      0.0%
+  commute_minutes                  0      0.0%
+  scholarship                      0      0.0%
+  commute_missing                  0      0.0%
+  scholarship_missing              0      0.0%
+
+5. MISSING VALUE HANDLING DECISIONS
+----------------------------------------
+  commute_minutes (~9.05% missing):
+    Decision: Impute using global median.
+    Justification:
+      • Missingness pattern appears random based on heatmap visualization.
+      • Correlation analysis shows near-zero relationships (|r| ≈ 0.01), supporting MCAR assumption.
+      • Group-level analysis (by department) shows nearly identical medians (~25 minutes),
+        indicating no meaningful subgroup variation.
+      • Median imputation preserves distribution shape and avoids bias from extreme values.
+      • Dropping ~9% of observations (~180 rows) would unnecessarily reduce dataset size.
+
+  scholarship (~19.45% missing):
+    Decision: Impute using 'None' category.
+    Justification:
+      • Missingness appears random (MCAR) with negligible correlation to other variables (|r| ≤ 0.03).
+      • High missing proportion (~19%) makes row deletion inappropriate.
+      • As a categorical variable, statistical imputation (mean/median) is not applicable.
+      • Introducing 'None' preserves dataset integrity and explicitly encodes absence of information.
+      • This approach avoids introducing artificial bias from mode imputation.
+
+  All other columns:
+    Decision: No action required.
+    Justification: These variables contain complete data (0% missing),
+    indicating no data quality concerns.
+
+6. DESCRIPTIVE STATISTICS (numeric columns)
+----------------------------------------
+       course_load  study_hours_weekly          gpa  attendance_pct  commute_minutes  commute_missing  scholarship_missing
+count  2000.000000          2000.00000  2000.000000     2000.000000      2000.000000      2000.000000          2000.000000
+mean      4.470500            14.88105     2.774545       77.479650        25.498000         0.090500             0.194500
+std       1.110741             5.88398     0.427506       11.773926        11.030677         0.286969             0.395914
+min       3.000000             1.00000     1.310000       36.700000         5.000000         0.000000             0.000000
+25%       3.000000            10.90000     2.480000       69.900000        18.000000         0.000000             0.000000
+50%       4.000000            14.90000     2.785000       77.300000        25.000000         0.000000             0.000000
+75%       5.000000            19.00000     3.080000       86.000000        33.000000         0.000000             0.000000
+max       6.000000            33.00000     4.000000      100.000000        79.000000         1.000000             1.000000
