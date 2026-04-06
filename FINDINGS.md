@@ -50,3 +50,10 @@
 2. **Investigate and reduce scholarship data gaps.** Nearly 20% of scholarship records are missing. The university should audit its data collection process to ensure scholarship status is recorded for all students, enabling fairer financial aid analysis.
 
 3. **Target support at low-attendance students.** The left-skewed attendance distribution reveals a distinct group attending below 70%. Early-warning interventions (e.g., advisor outreach) for these students could prevent GPA decline. See `output/dist_attendance.png`.
+### Hypothesis 3 — GPA differs across departments (ANOVA)
+
+- **Test**: One-way ANOVA
+- **F-statistic**: 0.6671
+- **p-value**: 0.6148
+- **Interpretation**: Not statistically significant (p >= 0.05). GPA is similar across all departments.
+

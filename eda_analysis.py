@@ -17,6 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+from itertools import combinations
 
 
 def load_and_profile(filepath):
@@ -288,6 +289,14 @@ def plot_distributions(df):
     plt.tight_layout()
     fig.savefig("output/dist_scholarship.png", dpi=150)
     plt.close()
+    # ── GPA by department — VIOLIN plot ─────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.violinplot(x="department", y="gpa", data=df, inner="box", ax=ax)
+    ax.set_title("GPA by Department — Violin Plot (Distribution Shape)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    fig.savefig("output/violin_gpa_department.png", dpi=150)
+    plt.close()
 
 
 def plot_correlations(df):
@@ -463,6 +472,87 @@ def run_hypothesis_tests(df):
             "   NOT significant — no strong association between scholarship and department (p >= 0.05)."
         )
     print("=" * 60)
+    # ── Hypothesis 3: GPA differs across departments (ANOVA)
+    # H0: All departments have equal mean GPA
+    # H1: At least one department differs
+
+    bio = df[df["department"] == "Biology"]["gpa"]
+    bus = df[df["department"] == "Business"]["gpa"]
+    cs = df[df["department"] == "Computer Science"]["gpa"]
+    eng = df[df["department"] == "Engineering"]["gpa"]
+    math = df[df["department"] == "Mathematics"]["gpa"]
+
+    f_stat, p_anova = stats.f_oneway(bio, bus, cs, eng, math)
+
+    print("\n" + "=" * 60)
+    print("HYPOTHESIS 3: GPA differs across departments (ANOVA)")
+    print("-" * 60)
+    print(f"  F-statistic : {f_stat:.4f}")
+    print(f"  p-value     : {p_anova:.4f}")
+
+    if p_anova < 0.05:
+        print("   SIGNIFICANT — at least one department has different GPA.")
+    else:
+        print("   NOT significant — GPA is similar across departments.")
+
+    # ── Assumptions ───────────────────────────────
+    groups = {
+        "Biology": bio,
+        "Business": bus,
+        "CS": cs,
+        "Engineering": eng,
+        "Math": math,
+    }
+
+    normality_results = {}
+    for name, group in groups.items():
+        stat, p = stats.shapiro(group)
+        normality_results[name] = p
+        print(f"  {name} normality p-value: {p:.4f}")
+
+    lev_stat, lev_p = stats.levene(*groups.values())
+    print(f"  Levene test p-value: {lev_p:.4f}")
+
+    # ── Post-hoc ────────────────────────────────
+    posthoc_results = []
+
+    if p_anova < 0.05:
+        print("\nPost-hoc pairwise t-tests (Bonferroni corrected):")
+
+        pairs = list(combinations(groups.keys(), 2))
+        n_tests = len(pairs)
+
+        for g1, g2 in pairs:
+            t_stat, p_val = stats.ttest_ind(groups[g1], groups[g2])
+            p_corrected = min(p_val * n_tests, 1.0)
+
+            result = {
+                "group1": g1,
+                "group2": g2,
+                "t_stat": t_stat,
+                "raw_p": p_val,
+                "corrected_p": p_corrected,
+                "significant": p_corrected < 0.05,
+            }
+
+            posthoc_results.append(result)
+
+            significance = "SIGNIFICANT" if p_corrected < 0.05 else "not significant"
+
+            print(
+                f"  {g1} vs {g2}: "
+                f"t = {t_stat:.3f}, raw p = {p_val:.4f}, "
+                f"corrected p = {p_corrected:.4f} → {significance}"
+            )
+
+    # ── SAVE EVERYTHING IN RESULTS ───────────────
+    results["anova_gpa_department"] = {
+        "f_statistic": f_stat,
+        "p_value": p_anova,
+        "normality_pvalues": normality_results,
+        "levene_pvalue": lev_p,
+        "posthoc": posthoc_results,
+    }
 
     return results
 
@@ -579,8 +669,26 @@ def write_findings(df, test_results):
             "below 70%. Early-warning interventions (e.g., advisor outreach) for these "
             "students could prevent GPA decline. See `output/dist_attendance.png`.\n"
         )
-
-    print("\nFINDINGS.md written to FINDINGS.md")
+        anova = test_results["anova_gpa_department"]
+        f.write("### Hypothesis 3 — GPA differs across departments (ANOVA)\n\n")
+        f.write(
+            f"- **Test**: One-way ANOVA\n"
+            f"- **F-statistic**: {anova['f_statistic']:.4f}\n"
+            f"- **p-value**: {anova['p_value']:.4f}\n"
+            f"- **Interpretation**: "
+            f"{'Statistically significant (p < 0.05). At least one department has a different mean GPA.' if anova['p_value'] < 0.05 else 'Not statistically significant (p >= 0.05). GPA is similar across all departments.'}\n\n"
+        )
+        if anova["posthoc"]:
+            f.write("**Post-hoc Bonferroni pairwise t-tests:**\n\n")
+            f.write("| Pair | t-stat | Raw p | Corrected p | Significant |\n")
+            f.write("|------|--------|-------|-------------|-------------|\n")
+            for r in anova["posthoc"]:
+                sig = "Yes" if r["significant"] else "No"
+                f.write(
+                    f"| {r['group1']} vs {r['group2']} | {r['t_stat']:.3f} | {r['raw_p']:.4f} | {r['corrected_p']:.4f} | {sig} |\n"
+                )
+            f.write("\n")
+    print("\nFINDINGS.md written to gFINDINGS.md")
 
 
 def main():
